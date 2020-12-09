@@ -65,7 +65,7 @@ class Trainer:
         # Generate and store data paths
         self.paths = {}
         self.paths['train'] = data_path + '/train'
-        self.paths['val'] = data_path + '/val'
+        self.paths['val'] = data_path + '/train'
         self.paths['test'] = data_path + '/test'
         self.paths['runs'] = 'runs'
         self.paths['hyp'] = 'hyp'
@@ -300,10 +300,10 @@ class Trainer:
         """
         ret_dict = {}
         ### TODO: CHOOSE HOW TO REPRESENT DATA ###
-        x, y = batch['x'], batch['y']
+        x, y = batch[0], batch[1]
         ### TODO: CHOOSE HOW TO REPRESENT DATA ###
         # Move tensors to device and optionally enforce data types
-        x, y = x.to(self.device).type(self.dtype), y.to(self.device).type(torch.long)
+        x, y = x.to(self.device).type(self.dtype), y.to(self.device)
         # Pass through the model
         preds = self.model(x)
         loss = self.criterion(preds, y)

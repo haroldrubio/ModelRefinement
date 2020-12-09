@@ -220,26 +220,16 @@ class ResNet(nn.Module):
     def forward(self, x):
         return self._forward_impl(x)
 
-
-def _resnet(arch, block, layers, pretrained, progress, **kwargs):
-    model = ResNet(block, layers, **kwargs)
-    if pretrained:
-        state_dict = load_state_dict_from_url(model_urls[arch],
-                                              progress=progress)
-        model.load_state_dict(state_dict)
-    # Modification: redefine the last linear layer
-    in_ftrs = model.fc.in_features
-    target_classes = 100
-    model.fc = nn.Linear(in_ftrs, target_classes)
-    return model
-
-def resnet50(pretrained=False, progress=True, **kwargs):
-    r"""ResNet-50 model from
-    `"Deep Residual Learning for Image Recognition" <https://arxiv.org/pdf/1512.03385.pdf>`_
-
-    Args:
-        pretrained (bool): If True, returns a model pre-trained on ImageNet
-        progress (bool): If True, displays a progress bar of the download to stderr
-    """
-    return _resnet('resnet50', Bottleneck, [3, 4, 6, 3], pretrained, progress,
-                   **kwargs)
+class ResNet50(nn.Module):
+    def __init__(self, pretrained=True, **kwargs):
+        super(ResNet50, self).__init__()
+        self.resnet = ResNet(Bottleneck, [3, 4, 6, 3], **kwargs)
+        if pretrained:
+            state_dict = load_state_dict_from_url(model_urls['resnet50'])
+            self.resnet.load_state_dict(state_dict)
+        # Modification: redefine the last linear layer
+        in_ftrs = self.resnet.fc.in_features
+        target_classes = 100
+        self.resnet.fc = nn.Linear(in_ftrs, target_classes)
+    def forward(self, x):
+        return self.resnet(x)
