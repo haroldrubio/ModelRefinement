@@ -5,6 +5,8 @@ import os
 import sys
 import math
 import Metrics
+import torchvision
+from torchvision import datasets, models, transforms
 from torch.utils.data import Dataset, DataLoader
 from torch import nn
 import torch.optim as optim
@@ -69,6 +71,7 @@ class Trainer:
         self.paths['hyp'] = 'hyp'
         self.paths['checkpoints'] = 'chk'
         # Create and store generic DataSet objects
+        pre_process = transforms.Compose([transforms.Resize(224), transforms.ToTensor()])
         self.train_set = GenericDataset(self.paths['train'])
         self.train_loader = DataLoader(self.train_set, batch_size=self.BATCH_SIZE, shuffle=True)
         self.val_set = GenericDataset(self.paths['val'])
@@ -531,22 +534,33 @@ class Trainer:
         checkpoint['optimizer_state_dict'] = self.optimizer.state_dict()
         torch.save(checkpoint, self.paths['checkpoints'])
 
-class GenericDataset(Dataset):
+class TrainDataset(Dataset):
     def __init__(self, root_dir):
         """
         Args:
             root_dir (string): Directory with the data (no sub-directories exist)
         """
         ### TODO: CHOOSE HOW TO IMPLEMENT FETCHING DATA ###
-        self.data = np.loadtxt(os.path.join(root_dir, 'data.txt'))
-        self.N, self.D = self.data.shape
+        self.dataset = torchvision.datasets.CIFAR100(root_dir, train=True, download=False)
+        self.N = 45000
     def __len__(self):
         return self.N
     def __getitem__(self, idx):
-        ret_val = {}
-        example = self.data[idx]
-        data_point = torch.tensor(example[:self.D-1])
-        label = torch.tensor(example[self.D-1])
-        ret_val['x'] = data_point
-        ret_val['y'] = label
+        ret_val = self.dataset[idx]
+        return ret_val
+
+class ValDataset(Dataset):
+    def __init__(self, root_dir):
+        """
+        Args:
+            root_dir (string): Directory with the data (no sub-directories exist)
+        """
+        ### TODO: CHOOSE HOW TO IMPLEMENT FETCHING DATA ###
+        self.dataset = torchvision.datasets.CIFAR100(root_dir, train=True, download=False)
+        self.start_idx = 45000
+        self.N = 5000
+    def __len__(self):
+        return self.N
+    def __getitem__(self, idx):
+        ret_val = self.dataset[self.start_idx + idx]
         return ret_val
