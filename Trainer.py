@@ -53,9 +53,9 @@ class Trainer:
             device(torch.device): The device to use for the model and data
         """
         self.BATCH_SIZE = batch_size
-        self.NUM_TRAIN = 10000
+        self.NUM_TRAIN = 45000
         self.NUM_VAL = 5000
-        self.NUM_TEST = 5000
+        self.NUM_TEST = 10000
         # Store the PyTorch Model
         self.model_class = model_class
         self.model_args, self.model_kwargs = None, None
@@ -71,12 +71,12 @@ class Trainer:
         self.paths['hyp'] = 'hyp'
         self.paths['checkpoints'] = 'chk'
         # Create and store generic DataSet objects
-        pre_process = transforms.Compose([transforms.Resize(224), transforms.ToTensor()])
-        self.train_set = GenericDataset(self.paths['train'])
+        pre_process = transforms.Compose([transforms.Resize(224), transforms.ToTensor(), transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
+        self.train_set = TrainDataset(self.paths['train'], pre_process)
         self.train_loader = DataLoader(self.train_set, batch_size=self.BATCH_SIZE, shuffle=True)
-        self.val_set = GenericDataset(self.paths['val'])
+        self.val_set = ValDataset(self.paths['val'], pre_process)
         self.val_loader = DataLoader(self.val_set, batch_size=self.BATCH_SIZE, shuffle=True)
-        self.test_set = GenericDataset(self.paths['test'])
+        self.test_set = torchvision.datasets.CIFAR100(self.paths['test'], train=False, download=False, transform=pre_process)
         self.test_loader = DataLoader(self.test_set, batch_size=self.BATCH_SIZE, shuffle=True)
         # Initialize a Hyperparameter object
         self.hyp = None
@@ -535,13 +535,14 @@ class Trainer:
         torch.save(checkpoint, self.paths['checkpoints'])
 
 class TrainDataset(Dataset):
-    def __init__(self, root_dir):
+    def __init__(self, root_dir, transform):
         """
         Args:
             root_dir (string): Directory with the data (no sub-directories exist)
+            transform (torchvision.transforms): The transform to apply to the data
         """
         ### TODO: CHOOSE HOW TO IMPLEMENT FETCHING DATA ###
-        self.dataset = torchvision.datasets.CIFAR100(root_dir, train=True, download=False)
+        self.dataset = torchvision.datasets.CIFAR100(root_dir, train=True, download=False, transform=transform)
         self.N = 45000
     def __len__(self):
         return self.N
@@ -550,13 +551,14 @@ class TrainDataset(Dataset):
         return ret_val
 
 class ValDataset(Dataset):
-    def __init__(self, root_dir):
+    def __init__(self, root_dir, transform):
         """
         Args:
             root_dir (string): Directory with the data (no sub-directories exist)
+            transform (torchvision.transforms): The transform to apply to the data
         """
         ### TODO: CHOOSE HOW TO IMPLEMENT FETCHING DATA ###
-        self.dataset = torchvision.datasets.CIFAR100(root_dir, train=True, download=False)
+        self.dataset = torchvision.datasets.CIFAR100(root_dir, train=True, download=False, transform=transform)
         self.start_idx = 45000
         self.N = 5000
     def __len__(self):
