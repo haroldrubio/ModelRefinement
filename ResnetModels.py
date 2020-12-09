@@ -227,6 +227,10 @@ def _resnet(arch, block, layers, pretrained, progress, **kwargs):
         state_dict = load_state_dict_from_url(model_urls[arch],
                                               progress=progress)
         model.load_state_dict(state_dict)
+    # Modification: redefine the last linear layer
+    in_ftrs = model.fc.in_features
+    target_classes = 100
+    model.fc = nn.Linear(in_ftrs, target_classes)
     return model
 
 def resnet50(pretrained=False, progress=True, **kwargs):
