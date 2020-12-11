@@ -105,6 +105,17 @@ class Trainer:
         self.history['loss']['train'] = []
         self.history['loss']['val'] = []
         self.history['loss']['test'] = []
+        self.history['loss']['train_iter'] = []
+        self.history['loss']['val_iter'] = []
+        self.history['loss']['test_iter'] = []
+
+        self.history['acc'] = {}
+        self.history['acc']['train'] = []
+        self.history['acc']['val'] = []
+        self.history['acc']['test'] = []
+        self.history['acc']['train_iter'] = []
+        self.history['acc']['val_iter'] = []
+        self.history['acc']['test_iter'] = []
 
     def hyp_opt(self, epochs=1, iters=10):
         """
@@ -176,7 +187,11 @@ class Trainer:
         for e in range(epochs):
         #   If first epoch, get initial evaluations
             if e == 0:
-                train_loss = self.evaluate_step(e-1, self.train_loader, self.NUM_TRAIN)
+                train_loss, train_acc = self.evaluate_step(e-1, self.train_loader, self.NUM_TRAIN)
+                self.history['loss']['train'].append(np.mean(train_loss))
+                self.history['acc']['train'].append(np.mean(train_acc))
+                self.history['loss']['train_iter'].extend(train_loss)
+                self.history['acc']['train_iter'].extend(train_acc)
                 self.evaluation(e-1, is_hyp_opt)
         #   Perform network training
             self.training(e)
@@ -204,8 +219,11 @@ class Trainer:
         Args:
             epoch(int): The current epoch number
         """
-        train_loss = self.train_step(epoch)
-        self.history['loss']['train'].append(train_loss)
+        train_loss, train_acc = self.train_step(epoch)
+        self.history['loss']['train'].append(np.mean(train_loss))
+        self.history['acc']['train'].append(np.mean(train_acc))
+        self.history['loss']['train_iter'].extend(train_loss)
+        self.history['acc']['train_iter'].extend(train_acc)
     def evaluation(self, epoch, hyp_opt=False):
         """
         Helper function to make the choice of whether to evaluate the validation set or the test set
@@ -216,12 +234,18 @@ class Trainer:
         """
         # If not optimizing hyperparameters, perform test step
         if hyp_opt == False:
-            test_loss = self.test_step(epoch)
+            test_loss, test_acc = self.test_step(epoch)
             self.history['loss']['test'].append(np.mean(test_loss))
+            self.history['acc']['test'].append(np.mean(test_acc))
+            self.history['loss']['test_iter'].extend(test_loss)
+            self.history['acc']['test_iter'].extend(test_acc)
         # Otherwise, perform validation step
         else:
-            val_loss = self.val_step(epoch)
+            val_loss, val_acc = self.val_step(epoch)
             self.history['loss']['val'].append(np.mean(val_loss))
+            self.history['acc']['val'].append(np.mean(val_acc))
+            self.history['loss']['val_iter'].extend(val_loss)
+            self.history['acc']['val_iter'].extend(val_acc)
     def train_step(self, epoch):
         """
         Helper function to facilitate the training steps of an epoch
@@ -235,17 +259,19 @@ class Trainer:
         #   Set network to train
         self.model.train()
         train_loss = []
+        train_acc = []
         for idx, batch in tqdm(enumerate(self.train_loader), total=math.ceil(self.NUM_TRAIN/self.BATCH_SIZE),
                                     desc=f'Training Epoch {epoch}', unit=' Batches'):
         #   Perform forward and backward passes
             forward_pass = self.pass_batch(batch)
-            loss, preds = forward_pass['loss'], forward_pass['preds']
+            loss, preds, acc = forward_pass['loss'], forward_pass['preds'], forward_pass['acc']
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
         #   Store metrics
+            train_acc.append(acc)
             train_loss.append(float(loss))
-        return np.mean(train_loss)
+        return train_loss, train_acc
     def val_step(self, epoch):
         """
         Helper function to facilitate the validation steps of an epoch
@@ -277,6 +303,7 @@ class Trainer:
         #   Scale epoch to start at 1
         epoch += 1
         eval_loss = []
+        eval_acc = []
         #   Set network to eval                
         self.model.eval()
         with torch.no_grad():
@@ -285,10 +312,11 @@ class Trainer:
                                             desc=f'Evaluating Epoch {epoch}', unit=' Batches'):
         #       Perform forward and backward passes
                 forward_pass = self.pass_batch(batch)
-                loss, preds = forward_pass['loss'], forward_pass['preds']
+                loss, preds, acc = forward_pass['loss'], forward_pass['preds'], forward_pass['acc']
         #       Store metrics
                 eval_loss.append(float(loss))
-        return np.mean(eval_loss)
+                eval_acc.append(float(acc))
+        return eval_loss, eval_acc
     def pass_batch(self, batch):
         """
         Passes a batch through the model and returns the required statistics
@@ -307,9 +335,11 @@ class Trainer:
         # Pass through the model
         preds = self.model(x)
         loss = self.criterion(preds, y)
+        acc = Metrics.accuracy_from_scores(preds, y)
         # Define values of ret_dict
         ret_dict['preds'] = preds
         ret_dict['loss'] = loss
+        ret_dict['acc'] = acc
         return ret_dict
 
     def create_object(self, object_type=None):
