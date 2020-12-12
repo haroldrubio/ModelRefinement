@@ -4,5 +4,6 @@ Test.ipynb
 TestTrain.py
 Trainer_Test.py
 data
+runs
 hyp_first
 hyp_second

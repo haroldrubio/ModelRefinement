@@ -1,17 +1,9 @@
 # Import packages
-import json
-from os import write
 import torch
 from torch import optim
 import torch.nn as nn
 import torch.nn.functional as F
 from ResnetModels import ResNet, ResNet50
-
-def write_history(name, history):
-    save_path = name + '.json'
-    with open(save_path, 'w') as outfile:
-        json.dump(history, outfile)
-
 # Choose device
 USE_GPU = True
 
@@ -30,12 +22,12 @@ from Hyperparameters import Hyperparameters as Hyp
 tr = Trainer(ResNet50, 'data', device, batch_size=128)
 optim_params = Hyp()
 optim_params.register('lr')
+#optim_params.set_range('lr', -6, -1)
 optim_params.set_value('lr', 1e-5)
 tr.set_hyperparameters(optim_params)
 tr.set_criterion(CrossEntropyLoss)
 tr.set_optimizer(Adam)
 tr.prime_optimizer()
 tr.prime_model(pretrained=True)
-tr.train(epochs=1, save_every=99, update_every=1)
-hist = tr.history
-write_history('raw', hist)
+#tr.hyp_opt(epochs=5, iters=20)
+tr.train(epochs=1, save_every=20, update_every=1)

@@ -204,9 +204,13 @@ class Trainer:
             if opt is None:
         #       Check if updating
                 if update_every > 0 and e % update_every == 0:
-                    train_loss, val_loss = self.history['loss']['train'][e], self.history['loss']['val'][e]
                     writer = SummaryWriter()
-                    writer.add_scalars('Loss', {'train': train_loss, 'val': val_loss}, e)
+                    if is_hyp_opt:
+                        train_loss, val_loss = self.history['loss']['train'][e], self.history['loss']['val'][e]
+                        writer.add_scalars('Loss', {'train': train_loss, 'val': val_loss}, e)
+                    else:
+                        train_loss, test_loss = self.history['loss']['train'][e], self.history['loss']['test'][e]
+                        writer.add_scalars('Loss', {'train': train_loss, 'test': test_loss}, e)
                     writer.close()
         #       Check if saving
                 if save_every > 0 and e % save_every == 0:
