@@ -141,7 +141,12 @@ class Trainer:
             # Write to TensorBoard
             path = self.paths['hyp'] + '/' + str(iter)
             writer = SummaryWriter(path)
-            writer.add_hparams(sample, {'train': self.history['loss']['train'][epochs-1], 'val': self.history['loss']['val'][epochs-1]})
+            writer_dict = {}
+            writer_dict['train_loss'] = self.history['loss']['train'][epochs-1]
+            writer_dict['val_loss'] = self.history['loss']['val'][epochs-1]
+            writer_dict['train_acc'] = self.history['acc']['train'][epochs-1]
+            writer_dict['val_acc'] = self.history['acc']['val'][epochs-1]
+            writer.add_hparams(sample, writer_dict)
             writer.close()
             # Reset histories
             self.init_history()
@@ -562,11 +567,12 @@ class Trainer:
         Args:
             epoch_number(int): The current epoch number
         """
+        save_path = self.paths['checkpoints'] + '/' + str(epoch_number) + '.pth'
         checkpoint = {}
         checkpoint['epoch'] = epoch_number
         checkpoint['model_state_dict'] = self.model.state_dict()
         checkpoint['optimizer_state_dict'] = self.optimizer.state_dict()
-        torch.save(checkpoint, self.paths['checkpoints'])
+        torch.save(checkpoint, save_path)
 
 class TrainDataset(Dataset):
     def __init__(self, root_dir, transform):

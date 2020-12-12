@@ -36,6 +36,6 @@ tr.set_criterion(CrossEntropyLoss)
 tr.set_optimizer(Adam)
 tr.prime_optimizer()
 tr.prime_model(pretrained=True)
-tr.train(epochs=1, save_every=99, update_every=1)
+tr.train(epochs=100, save_every=9, update_every=1)
 hist = tr.history
 write_history('raw', hist)
