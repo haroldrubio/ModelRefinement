@@ -204,11 +204,14 @@ class Trainer:
             self.evaluation(e, is_hyp_opt)
         #   Perform scheduler steps
             if self.scheduler is not None:
-                self.scheduler.step()
+                # ONLY FOR USE WITH ReduceLROnPlateau
+                test_acc = self.history['acc']['test'][e]
+                self.scheduler.step(test_acc)
+                # self.scheduler.step()
         #   If not optimizing hyperparams
             if opt is None:
         #       Check if updating
-                if update_every > 0 and e % update_every == 0:
+                if update_every > 0 and (e + 1) % update_every == 0:
                     writer = SummaryWriter()
                     if is_hyp_opt:
                         train_loss, val_loss = self.history['loss']['train'][e], self.history['loss']['val'][e]
@@ -218,7 +221,7 @@ class Trainer:
                         writer.add_scalars('Loss', {'train': train_loss, 'test': test_loss}, e)
                     writer.close()
         #       Check if saving
-                if save_every > 0 and e % save_every == 0:
+                if save_every > 0 and (e + 1) % save_every == 0:
                     self.store_checkpoint(e)
     def training(self, epoch):
         """
