@@ -1,6 +1,6 @@
 # Model Refinement
 ## A New Approach to Knowledge Distillation
-I explore a new pipeline for knowledge distillation that builds off of the HuggingFace approach used to build a lighter version of the larger BERT model [1]. 
+I explore a new pipeline for knowledge distillation that builds off of the HuggingFace approach used to build a lighter version of the larger BERT model [1]. The hypothesis is that rich loss functions that allow gradient signals to directly propagate to each layer without being gated by intermediate layers allows for more effective weight representations. However, this is not to say that learning-at-scale with extremely deep and wide architectures is not needed. In fact, these networks are necessary starting points for refined models. Starting wide and deep allows networks to learn complex feature spaces at the per-layer level, where the shallow and refined networks would not have the capability of doing so.
 ## Knowledge Distillation in the Computer Vision Domain
 I first explore the transferability of the approach to the domain of computer vision using the landmark ResNet architecture [2].
 
