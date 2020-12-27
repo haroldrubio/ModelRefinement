@@ -204,10 +204,10 @@ class Trainer:
             self.evaluation(e, is_hyp_opt)
         #   Perform scheduler steps
             if self.scheduler is not None:
+                self.scheduler.step()
                 # ONLY FOR USE WITH ReduceLROnPlateau
-                test_acc = self.history['acc']['test'][e]
-                self.scheduler.step(test_acc)
-                # self.scheduler.step()
+                # test_acc = self.history['acc']['test'][e]
+                # self.scheduler.step(test_acc)
         #   If not optimizing hyperparams
             if opt is None:
         #       Check if updating
