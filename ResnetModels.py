@@ -32,6 +32,12 @@ def conv1x1(in_planes, out_planes, stride=1):
     """1x1 convolution"""
     return nn.Conv2d(in_planes, out_planes, kernel_size=1, stride=stride, bias=False)
 
+class Activation:
+    def __init__(self):
+        self.outputs = []
+        
+    def __call__(self, module, module_in, module_out):
+        self.outputs.append(module_out)
 
 class BasicBlock(nn.Module):
     expansion = 1
@@ -131,6 +137,8 @@ class ResNet(nn.Module):
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d
         self._norm_layer = norm_layer
+        self.activations = Activation()
+        # self.resnet = ResNet(Bottleneck, [3, 4, 6, 3], **kwargs)
 
         self.inplanes = 64
         self.dilation = 1
@@ -155,6 +163,17 @@ class ResNet(nn.Module):
                                        dilate=replace_stride_with_dilation[1])
         self.layer4 = self._make_layer(block, 512, layers[3], stride=2,
                                        dilate=replace_stride_with_dilation[2])
+
+        # Register forward hooks for each residual block activation
+        for layer in self.layer1.modules():
+            layer.register_forward_hook(self.activations)
+        for layer in self.layer2.modules():
+            layer.register_forward_hook(self.activations)
+        for layer in self.layer3.modules():
+            layer.register_forward_hook(self.activations)
+        for layer in self.layer4.modules():
+            layer.register_forward_hook(self.activations)
+
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         self.fc = nn.Linear(512 * block.expansion, num_classes)
 
@@ -233,3 +252,29 @@ class ResNet50(nn.Module):
         self.resnet.fc = nn.Linear(in_ftrs, target_classes)
     def forward(self, x):
         return self.resnet(x)
+
+class DoubleResNet(nn.Module):
+    def __init__(self):
+        super(DoubleResNet, self).__init__()
+        # Define base, pre-trained ResNet
+        target_classes = 100
+        self.base = ResNet(Bottleneck, [3, 4, 6, 3])
+        in_ftrs = self.base.fc.in_features
+        self.base.fc = nn.Linear(in_ftrs, target_classes)
+        checkpoint = torch.load('chk_base/29.pth')
+        self.base.load_state_dict(checkpoint['model_state_dict'])
+
+        # Define the half-sized model
+        # In this case: ResNet29
+        self.small = ResNet(Bottleneck, [2, 2, 3, 2])
+        self.small.fc = nn.Linear(in_ftrs, target_classes)
+
+    def forward(self, x):
+        ret_dict = {}
+        ret_dict['small'], ret_dict['big'] = {}, {}
+        ret_dict['small']['signal'] = self.small(x)
+        ret_dict['big']['signal'] = self.base(x)
+        ret_dict['small']['activation'] = self.small.activations
+        ret_dict['big']['activation'] = self.base.activations
+        return ret_dict
+        
